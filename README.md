@@ -54,11 +54,9 @@ so the agent loads only the detail it needs.
 - `gt` 0.1.0 or newer (`gt version`)
 - A Gitea instance running **28 or newer**
 
-Install `gt` itself with:
-
-```bash
-curl -fsSL https://gitea.com/gitea/cli/raw/branch/main/scripts/install.sh | sh
-```
+Install `gt` itself from the official source:
+[gitea.com/gitea/cli](https://gitea.com/gitea/cli) (releases and source) or
+[dl.gitea.com/gitea-cli](https://dl.gitea.com/gitea-cli/) (prebuilt binaries).
 
 ## License
 
