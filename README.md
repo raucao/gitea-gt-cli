@@ -6,11 +6,17 @@ releases, Actions, packages, organizations, and authentication.
 
 ## Install
 
-```bash
-npx skills add https://gitea.kosmos.org/raucao/gitea-gt-cli.git
+Listed on [skills.sh](https://skills.sh/raucao/gitea-gt-cli/gitea-gt-cli):
 
-# Specific agent / global
-npx skills add https://gitea.kosmos.org/raucao/gitea-gt-cli.git -a opencode -g
+```bash
+# Default (GitHub, tracks skills.sh)
+npx skills add raucao/gitea-gt-cli
+
+# Global / a specific agent
+npx skills add raucao/gitea-gt-cli -a opencode -g
+
+# From the upstream Gitea instance
+npx skills add https://gitea.kosmos.org/raucao/gitea-gt-cli.git
 ```
 
 Without the `skills` CLI, copy `SKILL.md` and the `references/` directory into
