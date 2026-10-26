@@ -7,18 +7,11 @@ releases, Actions, packages, organizations, and authentication.
 ## Install
 
 ```bash
-# HTTPS
 npx skills add https://gitea.kosmos.org/raucao/gitea-gt-cli.git
 
-# SSH
-npx skills add ssh://git@gitea.kosmos.org/raucao/gitea-gt-cli.git
-
 # Specific agent / global
-npx skills add https://gitea.kosmos.org/raucao/gitea-gt-cli.git -a claude-code -g
+npx skills add https://gitea.kosmos.org/raucao/gitea-gt-cli.git -a opencode -g
 ```
-
-The `skills` CLI supports any git host, so this works from Gitea. It will not be
-listed on skills.sh, which only indexes GitHub repositories.
 
 Without the `skills` CLI, copy `skills/gitea-gt-cli/` into your agent's skills
 directory, for example `~/.agents/skills/gitea-gt-cli/` or
@@ -28,14 +21,22 @@ directory, for example `~/.agents/skills/gitea-gt-cli/` or
 
 ```text
 skills/gitea-gt-cli/
-├── SKILL.md                     # when to use gt, auth, core concepts, workflows, gotchas
+├── SKILL.md                  # when to use gt, auth, core concepts, command map, gotchas
 └── references/
-    ├── commands-core.md         # auth, repo, issue, pr, release, org, label, milestone, branch
-    ├── commands-actions.md      # run, workflow, secret, variable, package, admin
-    └── commands-misc.md         # team, notification, search, status, time, webhook, wiki, ...
+    ├── workflows.md          # end-to-end recipes (issues, PRs, Actions, releases, fork/sync)
+    ├── auth.md               # auth, doctor, setup-git, env vars
+    ├── repos.md              # repo, branch
+    ├── issues.md             # issue, label, milestone
+    ├── pull-requests.md      # pr (reviews, checks, diff, merge, status)
+    ├── releases.md           # release
+    ├── organizations.md      # org, team
+    ├── actions.md            # run, workflow
+    ├── ci-config.md          # secret, variable, package
+    ├── discovery.md          # search, status, notification, time
+    └── instance.md           # config, api, alias, completion, webhook, wiki, ssh-key, admin
 ```
 
-`SKILL.md` stays small and points at the reference file for each command group,
+`SKILL.md` stays small and maps each command group to a focused reference file,
 so the agent loads only the detail it needs.
 
 ## Requirements

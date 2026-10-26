@@ -23,8 +23,8 @@ at your desk and in CI.
   which is stable; text output is for people.
 
 Use this skill whenever a task involves running `gt` or managing a Gitea
-instance from the shell. Do not guess flags: every command's help lists its
-flags and JSON fields, and the reference files below mirror that help.
+instance from the shell. Do not guess flags: each command's help lists its flags
+and JSON fields, and the reference files mirror that help.
 
 ## Install `gt`
 
@@ -35,9 +35,6 @@ curl -fsSL https://gitea.com/gitea/cli/raw/branch/main/scripts/install.sh | sh
 # Windows (PowerShell)
 irm https://gitea.com/gitea/cli/raw/branch/main/scripts/install.ps1 | iex
 
-# Docker
-docker run --rm gitea/gitea-cli --help
-
 # From source
 go install gitea.dev/cli/cmd/gt@latest
 ```
@@ -47,38 +44,21 @@ Verify with `gt version`. Binaries are also at
 
 ## Authenticate
 
-`gt` keeps accounts in `hosts.yml` and tokens in the system keyring (or a
-private file), under `~/.config/gitea-cli/` (`GITEA_CLI_CONFIG_DIR` overrides).
-It never reads `tea`'s config.
+`gt` stores accounts in `hosts.yml` and tokens in the system keyring (or a
+private file), under `~/.config/gitea-cli/`. It never reads `tea`'s config.
 
 ```bash
-# Interactive: asks for instance, OAuth or token, storage, and git setup
-gt auth login
-
-# CI / non-interactive: token on stdin
-gt auth login --host gitea.example.com --with-token < token.txt
+gt auth login                                       # interactive: OAuth or token
+gt auth login --host gitea.example.com --with-token < token.txt   # CI
 echo "$TOKEN" | gt auth login --host gitea.example.com --with-token
-
-# OAuth in the browser with explicit scopes
-gt auth login --host gitea.example.com --oauth --scopes read:repository,read:user
-
-# Inspect and use accounts
-gt auth status            # which accounts, active one, method (exit 4 if none/invalid)
-gt auth status --verify   # check credentials against the instance
-gt auth token             # print the active token (for curl/scripts)
-gt auth switch            # change the active account of an instance
-gt auth setup-git         # configure git to use gt for https push/fetch
-gt doctor                 # diagnose settings, instance, account, repo and git
+gt auth status --verify                             # check the active credential
+gt doctor                                           # diagnose the setup here
 ```
 
-### Environment variables (CI)
-
-- `GITEA_TOKEN` + `GITEA_INSTANCE_URL` (or `GITEA_CLI_HOST`): use a token
-  instead of stored credentials.
-- `GITEA_CLI_*` prefixed variables mirror global flags and settings; see
-  `gt help environment` for the full list (config dir, user, repo, editor,
-  pager, color, http timeout, ...).
-- `GITEA_INSTANCE_INSECURE`, `GITEA_INSTANCE_SSH_HOST`: pair with `GITEA_TOKEN`.
+In CI, `GITEA_TOKEN` + `GITEA_INSTANCE_URL` (or `GITEA_CLI_HOST`) replace stored
+credentials; other `GITEA_CLI_*` variables mirror flags and settings. Full flags,
+`setup-git`, `token`, and the environment list are in
+[references/auth.md](references/auth.md).
 
 ## Core concepts
 
@@ -93,12 +73,6 @@ It picks the **repository** from: `--repo`/`-R OWNER/REPO`, `GITEA_CLI_REPO`,
 (`--remote`, else the base remote `pr checkout` recorded, the current branch's
 remote, upstream, or origin). Like `gh`, a clone with `upstream` and `origin`
 targets `upstream`.
-
-```bash
-gt -R alice/project issue list
-gt issue list --repo alice/project      # same, flag after the command
-gt repo set-default upstream/name       # make this clone target the upstream
-```
 
 ### Global flags
 
@@ -117,6 +91,9 @@ Work with every command, before or after the command name:
 | `--debug` | Log HTTP method, URL, status, duration to stderr |
 | `--cwd dir` / `--remote remote` | Repository discovery |
 
+Repository-scoped groups also inherit `--remote`, `--cwd`; list/view commands
+add `--json`/`--jq`. See `gt help environment`.
+
 ### JSON output
 
 Text output is for people and may change; **use `--json` in scripts**. `--jq`
@@ -125,8 +102,6 @@ available ones, and each command's help lists its JSON fields.
 
 ```bash
 gt issue list --json number,title --jq '.[] | "\(.number)\t\(.title)"'
-gt pr list --json number,title,head --jq '.[] | select(.head == "feature/login")'
-gt run list --since 24h --json id,status,conclusion,workflow
 ```
 
 Some fields cost extra requests (e.g. `pr list` reviewers, `issue view`
@@ -149,78 +124,22 @@ Commands may document further codes. See `gt help exit-codes`.
 
 ## Command map
 
+Read the reference file for a group to get its per-command flags, arguments,
+`--json` fields and examples. `gt <group> <cmd> --help` is always authoritative.
+
 | Group | Commands | Reference |
 | --- | --- | --- |
-| Auth | `auth` (login, logout, refresh, setup-git, status, switch, token) | `references/commands-core.md` |
-| Repositories | `repo` (create, clone, fork, sync, view, list, edit, migrate, deploy-key, ...) | `references/commands-core.md` |
-| Issues | `issue` (create, list, view, edit, close, reopen, comment, timeline, attachment) | `references/commands-core.md` |
-| Pull requests | `pr` (create, list, view, checkout, diff, checks, review, merge, status, clean) | `references/commands-core.md` |
-| Releases | `release` (create, list, view, edit, upload, download, asset, publish) | `references/commands-core.md` |
-| Orgs & labels | `org`, `label`, `milestone`, `branch` | `references/commands-core.md` |
-| Actions | `run`, `workflow`, `secret`, `variable`, `package`, `admin` | `references/commands-actions.md` |
-| Everything else | `team`, `notification`, `search`, `status`, `time`, `webhook`, `wiki`, `ssh-key`, `api`, `config`, `alias`, `completion` | `references/commands-misc.md` |
-
-**Read the reference file** when you need exact flags, arguments, accepted
-`--json` fields, or examples for a command. `gt <group> <cmd> --help` is always
-authoritative for the installed version.
-
-## Common workflows
-
-### Issue lifecycle
-
-```bash
-gt issue list --assignee @me --state open
-gt issue view 12 --comments
-gt issue create --title "Crash on start" --body "Steps..." --label bug --milestone v1.0
-gt issue edit 12 --add-label triage --add-assignee @me
-gt issue comment 12 --body "Fixed in #14"
-gt issue close 12 --comment "Done in #14"
-```
-
-### Pull requests (create → checks → review → merge)
-
-```bash
-gt pr create --fill                       # push branch, open PR, title/body from commits
-gt pr create --fill --yes                 # non-interactive: also push without asking
-gt pr list --author @me --state all
-gt pr checkout 13 --update                # local branch tracking the PR head
-gt pr diff 13 | git apply                 # pipe clean diff (git apply works)
-gt pr checks 13 --watch                   # waits; exit 8 while pending, 1 if a check failed
-gt pr review --approve
-gt pr review 13 --request-changes -b "Please hash the password"
-gt pr merge 13 --squash --delete-branch
-```
-
-### Actions: run, watch, logs, artifacts
-
-```bash
-gt workflow list
-gt workflow run deploy.yml --ref main --field env=staging
-gt run list --workflow CI --branch main --status failure
-gt run watch 34 --timeout 10m && echo deployed
-gt run view 34 --log
-gt run logs 34 --job build --follow
-gt run download 34 --name build --dir dist
-gt secret set DEPLOY_TOKEN
-```
-
-### Releases
-
-```bash
-gt release create v1.0.0 dist/tool-linux dist/tool-darwin --notes-file CHANGELOG.md
-gt release list
-gt release upload v1.0.0 dist/tool-darwin --clobber
-gt release download v1.0.0
-```
-
-### Fork / clone / keep in sync
-
-```bash
-gt repo fork --remote          # inside a clone: add fork as origin, rename old origin to upstream
-gt repo clone alice/project src --depth 1
-gt repo sync                   # fast-forward the default branch from its remote
-gt repo sync bob/project       # fork without a local remote: update it on the server
-```
+| Auth | `auth`, `doctor` | [auth.md](references/auth.md) |
+| Repositories | `repo`, `branch` | [repos.md](references/repos.md) |
+| Issues | `issue`, `label`, `milestone` | [issues.md](references/issues.md) |
+| Pull requests | `pr` | [pull-requests.md](references/pull-requests.md) |
+| Releases | `release` | [releases.md](references/releases.md) |
+| Organizations | `org`, `team` | [organizations.md](references/organizations.md) |
+| Actions | `run`, `workflow` | [actions.md](references/actions.md) |
+| CI config | `secret`, `variable`, `package` | [ci-config.md](references/ci-config.md) |
+| Discovery | `search`, `status`, `notification`, `time` | [discovery.md](references/discovery.md) |
+| Instance | `config`, `api`, `alias`, `completion`, `webhook`, `wiki`, `ssh-key`, `admin` | [instance.md](references/instance.md) |
+| Recipes | end-to-end workflows | [workflows.md](references/workflows.md) |
 
 ## Coming from `tea`
 
