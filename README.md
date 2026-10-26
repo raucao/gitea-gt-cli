@@ -13,27 +13,31 @@ npx skills add https://gitea.kosmos.org/raucao/gitea-gt-cli.git
 npx skills add https://gitea.kosmos.org/raucao/gitea-gt-cli.git -a opencode -g
 ```
 
-Without the `skills` CLI, copy `skills/gitea-gt-cli/` into your agent's skills
-directory, for example `~/.agents/skills/gitea-gt-cli/` or
+Without the `skills` CLI, copy `SKILL.md` and the `references/` directory into
+your agent's skills directory, for example `~/.agents/skills/gitea-gt-cli/` or
 `.agents/skills/gitea-gt-cli/`.
 
 ## What's inside
 
+The skill is the repository root:
+
 ```text
-skills/gitea-gt-cli/
+.
 ├── SKILL.md                  # when to use gt, auth, core concepts, command map, gotchas
-└── references/
-    ├── workflows.md          # end-to-end recipes (issues, PRs, Actions, releases, fork/sync)
-    ├── auth.md               # auth, doctor, setup-git, env vars
-    ├── repos.md              # repo, branch
-    ├── issues.md             # issue, label, milestone
-    ├── pull-requests.md      # pr (reviews, checks, diff, merge, status)
-    ├── releases.md           # release
-    ├── organizations.md      # org, team
-    ├── actions.md            # run, workflow
-    ├── ci-config.md          # secret, variable, package
-    ├── discovery.md          # search, status, notification, time
-    └── instance.md           # config, api, alias, completion, webhook, wiki, ssh-key, admin
+├── references/
+│   ├── workflows.md          # end-to-end recipes (issues, PRs, Actions, releases, fork/sync)
+│   ├── auth.md               # auth, doctor, setup-git, env vars
+│   ├── repos.md              # repo, branch
+│   ├── issues.md             # issue, label, milestone
+│   ├── pull-requests.md      # pr (reviews, checks, diff, merge, status)
+│   ├── releases.md           # release
+│   ├── organizations.md      # org, team
+│   ├── actions.md            # run, workflow
+│   ├── ci-config.md          # secret, variable, package
+│   ├── discovery.md          # search, status, notification, time
+│   └── instance.md           # config, api, alias, completion, webhook, wiki, ssh-key, admin
+├── README.md
+└── LICENSE
 ```
 
 `SKILL.md` stays small and maps each command group to a focused reference file,
