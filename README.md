@@ -7,7 +7,7 @@ variables, packages, organizations, extensions, and authentication.
 
 ## Install
 
-Listed on [skills.sh](https://skills.sh/raucao/gitea-gt-cli/gitea-gt-cli):
+Listed on [skills.sh](https://skills.sh/raucao/gitea-gt-cli):
 
 ```bash
 # Default (GitHub, tracks skills.sh)
