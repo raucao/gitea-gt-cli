@@ -11,7 +11,7 @@ SKILL.md.
 
 ```text
 gt issue <command>
-  attachment  close  comment  create  edit  list  reopen  timeline  view
+  attachment  close  comment  create  edit  list  move  reopen  timeline  view
 ```
 
 `issue list` aliases `issue ls`; `issue create` aliases `issue new`.
@@ -49,7 +49,7 @@ gt issue list --kind all --milestone v1.0 | cut -f1,2
 
 `-t/--title`, `-b/--body`, `-F/--body-file file|-`, `-e/--editor`,
 `-a/--assignee login`, `-l/--label name` (prefix `repo:`/`org:` to disambiguate),
-`-m/--milestone`, `-p/--project`, `--ref`, `--deadline DATE`,
+`-m/--milestone`, `-p/--project` (repeatable), `--ref`, `--deadline DATE`,
 `-T/--template name`, `--attachment File`, `-w/--web`.
 
 Without flags on a terminal, a form asks for title and body, then optionally
@@ -71,6 +71,8 @@ Adds/removes relative to current values, or replaces with `--set-*`:
 `--remove-milestone`, `--add-blocked-by`, `--remove-blocked-by`,
 `--add-project`, `--remove-project`, `-t/--title`, `-b/--body`,
 `-F/--body-file`, `-e/--editor`, `--ref`, `--deadline`. Accepts multiple issues.
+Without flags on a terminal, a form edits one issue at a time from its current
+values.
 
 ```bash
 gt issue edit 12 --title "Crash on start" --add-label bug
@@ -78,20 +80,41 @@ gt issue edit 12 13 --add-assignee @me --milestone v1.0
 gt issue edit 12 --add-blocked-by 9
 ```
 
+### move
+
+`move {<number>|<url>} [to] <column> [--project title]` — move an issue to
+another column of the project board it is on. The column is matched by ID, then
+name, then ignoring case, spaces and punctuation (`in-progress` finds
+"In progress"). Use `--project` when the issue is on several boards. Organization
+projects require a token that can write to the organization.
+
+```bash
+gt issue move 47 to Todo
+gt issue move 47 to "In progress"
+gt issue move 47 in-progress --project Roadmap
+```
+
 ### close / reopen / comment / timeline / view / attachment
 
 - `close {N}... [-c comment]`, `reopen {N}...`
-- `comment {N} [-b text] [-F file] [-e] [--edit-last] [--delete-last]
-  [--attachment File]`; subcommands `list|view|edit|delete`. JSON: `author,
-  body, created_at, id, issue_number, updated_at, url`.
+- `comment {N} [-b text] [-F file] [-e] [--attachment File] [--edit-last]
+  [--delete-last]`; subcommands `create|list|view|edit|delete`, plus
+  `attachment` for the files on a comment. JSON: `author, body, created_at, id,
+  issue_number, updated_at, url`.
 - `timeline {N} [-L n] [--page n]` — comments and changes, oldest first.
 - `view {N} [-c|--comments] [-w]`
-- `attachment {list|view|upload|download|edit|delete}`
+- `attachment {list|view|upload|download|edit|delete}` — files attached to the
+  issue, addressed by the issue number and the attachment ID. JSON:
+  `created_at, download_count, id, name, size, url`. `upload ... [--name NAME]`,
+  `download ... [-O file|-] [-D dir] [--clobber] [--skip-existing]`, `edit ...
+  --name NAME` renames.
 
 ```bash
 gt issue view 12 --comments
 gt issue comment 12 --body "Fixed in #14"
 gt issue close 12 13 --comment "Done in #14"
+gt issue attachment upload 12 crash.log
+gt issue attachment download 12 9 -O - | less
 ```
 
 ## label
@@ -102,19 +125,23 @@ gt label <command>
 ```
 
 Scope with `--org organization` for organization labels; otherwise the
-repository's. Addressed by name or ID. JSON: `color, description, exclusive,
-id, is_archived, name`.
+repository's. Addressed by name or ID; `--by-name` reads a number as a title.
+JSON: `color, description, exclusive, id, is_archived, name`.
 
 - `create <name> [-c color] [-d description] [--exclusive] [--archived]
   [-f/--force]` — random color without `-c`; `--force` updates on name clash.
-- `list`, `edit`, `delete`
+- `edit <label> [-n name] [-c color] [-d description] [--exclusive]
+  [--archived] [--by-name]` — **without flags on a terminal, a form edits the
+  name, color and description from their current values**.
+- `list`, `delete`
 - `export [-O|--output file]` and `import <file> [-f|--force]` — a label file,
-  one label per line: `#color name ;description ;flags`. `gt label export`
-  writes this format; Gitea label templates use it. `-` reads/writes stdin.
+  one label per line: `#color name ;description ;flags` (flags are `exclusive`
+  and `archived`). `gt label export` writes this format; Gitea label templates
+  use it. `-` reads/writes stdin.
 
 ```bash
 gt label create bug --color d73a4a --description "Something is broken"
-gt label create "priority/high" --exclusive
+gt label edit bug --name defect --color b60205
 gt label export --org acme --output labels.txt
 gt label export -R alice/old | gt label import - -R alice/new
 ```
@@ -136,7 +163,7 @@ state, title`.
   existing milestone of the same title.
 - `list [-s {open|closed|all}] [-L n] [--page n]`, `view`, `edit`, `close`,
   `reopen`, `delete`
-- `issue list <milestone>` etc.
+- `issue {list|add|remove} <milestone> [...]`.
 
 ```bash
 gt milestone create v1.0 --deadline 2026-12-31 --description "First release"

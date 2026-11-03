@@ -10,25 +10,32 @@ gt org <command>
   create  delete  edit  list  member  view
 ```
 
-Organizations you belong to.
+`org list` aliases `org ls`; `org delete` aliases `org rm`.
 
-- `list`, `view <org>`
+**JSON fields:** `description, full_name, id, location, name,
+repo_admin_change_team_access, visibility, website`.
+
+- `list [--all] [--username user] [-L n] [--page n]` — your memberships by
+  default, another user's with `--username`, every visible organization with
+  `--all`.
+- `view <org>`
 - `create <name> [-d description] [--full-name NAME] [--location LOC]
   [--website URL] [--visibility {public|limited|private}]
   [--repo-admins-can-change-team-access[=false]]`
-- `edit <org>`, `delete <org>`
-- `member {list|add|remove}` — `member list <org> [--public]`; Gitea lists every
-  membership as public to administrators, so for them `gt` checks each one's
-  visibility (one request per member) unless the output omits it.
-
-JSON: `description, full_name, id, location, name, repo_admin_change_team_access,
-visibility, website`.
+- `edit <org>` — as `create`, only the flags you pass change.
+- `delete <org> [-y]`
+- `member {list|remove|conceal|publicize}` — Gitea adds members through teams
+  (`gt team member add ORG/TEAM USER`); a membership can be public or concealed.
+  `member list <org> [--public]` checks each membership's visibility for
+  administrators (one request per member) unless the output omits it.
 
 ```bash
 gt org list
+gt org list --all
 gt org create acme --full-name "ACME Corp"
 gt org create acme-internal --visibility private
 gt org member list acme --public
+gt org member conceal acme bob
 ```
 
 ## team
@@ -38,10 +45,11 @@ gt team <command>
   create  delete  edit  list  member  repo  view
 ```
 
-Teams grant members access to an organization's repositories. In JSON, `access`
-is the effective access shown in text (e.g. `write`, `"write (code, issues,
-pulls)"`); `permission` is the team-wide level Gitea reports (`none` for a team
-that grants access per unit).
+Teams grant members access to an organization's repositories. `team list`
+aliases `team ls`; `team delete` aliases `team rm`. In JSON, `access` is the
+effective access shown in text (e.g. `write`, `"write (code, issues, pulls)"`);
+`permission` is the team-wide level Gitea reports (`none` for a team that grants
+access per unit).
 
 **JSON fields:** `access, all_repositories, can_create_repo, description, id,
 name, organization, permission, units`.
@@ -50,15 +58,20 @@ name, organization, permission, units`.
   [--unit repo.code=write,repo.wiki=read] [--all-repositories]
   [--can-create-repo] [-d description]` — `--permission` grants every repository
   unit; `--unit` sets single units and overrides `--permission` per unit.
-- `edit <team>`, `delete <team>`, `view <team>`, `list <org>`
+- `edit <team> [...]` — `--unit` merges into the current policy unless
+  `--unit-replace` is given.
+- `delete <team> [--force]` — `--force` allows deleting the owner team.
+- `view <team>`, `list <org> [-L n] [--page n]`
 - `member {add|list|remove} <team> [<username>...]` — a team is `ORG/TEAM` or a
   numeric ID; adding a user also makes them an org member.
 - `repo {add|list|remove} <team> [<repository>...]` — repositories named alone
-  (`service`) or `ORG/NAME`.
+  (`service`) or `ORG/NAME`; removing from an all-repositories team has no
+  effect until you turn that off with `team edit --all-repositories=false`.
 
 ```bash
 gt team create acme developers --permission write
 gt team create acme/reviewers --unit repo.code=read,repo.pulls=write
+gt team edit acme/developers --unit repo.wiki=write
 gt team member add acme/developers bob
 gt team repo add acme/developers service
 ```

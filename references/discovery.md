@@ -15,19 +15,20 @@ gt notification <command>
 
 Across your whole inbox unless `-R`/`--this-repo` selects a repository. **IDs
 are notification thread IDs, not issue numbers.** `--type` is `issue`, `pull`,
-`commit`, or `repository`.
+`commit`, or `repository`; `--status` is `unread`, `read` or `pinned`.
 
 **JSON fields:** `id, number, pinned, repository, state, title, type, unread,
 updated_at, url`.
 
-- `list [--status unread,read,pinned] [--type ...] [--since/--before when]
-  [-L n] [--page n] [--this-repo]` (alias `ls`)
+- `list [--status ...] [--type ...] [--since/--until when] [-L n] [--page n]
+  [--this-repo]` (alias `ls`) — default status `unread,pinned`.
 - `view <id> [--this-repo]` — marks unread as read.
-- `mark-read [<id>...] [--all] [--status ...] [--before when] [--this-repo]`,
+- `mark-read [<id>...] [--all] [--status ...] [--until when] [--this-repo]`,
   `mark-unread`, `pin`, `unpin`.
 - `watch [--type ...] [--status ...] [--interval 5s] [--timeout d] [--json]` —
   streams as they arrive; on a terminal runs until Ctrl-C, otherwise stops after
-  1 minute unless `--timeout` is given.
+  1 minute unless `--timeout` is given. With `--json` it prints one object per
+  line.
 
 ```bash
 gt notification list
@@ -44,19 +45,19 @@ gt search <command>
 ```
 
 Searches the selected instance within what your account can see. Words match
-titles and bodies.
+titles and bodies. `search issue`/`search pr` accept `--assigned`,
+`--authored`, `--mentioned`, `-A/--author`, `-l/--label`, `-m/--milestone`,
+`--owner`, `--since/--until`, `-s/--state`, `--team` (requires `--owner`),
+`-L`, `--page`; `search pr` adds `--review-requested`, `--reviewed`
+(instance-wide). Several `--label` names require `-R`/`--repo`.
 
 - `search repo [<query>...] [--topic] [--owner OWNER] [--type {fork|source|mirror}]
   [--archived[=false]] [--private[=false]] [--sort {alpha|created|updated|size|id}]
   [--order {asc|desc}] [-L n] [--page n]`
-- `search issue [<query>...] [--assigned] [--authored] [--mentioned]
-  [-A author] [-l label] [-m milestone] [--owner] [--team team] [-s state]
-  [--since/--until when] [-L n] [--page n]` (alias `search issues`)
-- `search pr [<query>...]` — like issue plus `--review-requested`, `--reviewed`
-  (instance-wide) (alias `search prs`).
+- Aliases: `search issues`, `search prs`.
 
-`search issue`/`pr` JSON: `author, body, created_at, id, number, repository,
-state, title, type, updated_at, url`.
+**JSON fields** (`search issue`/`pr`): `author, body, created_at, id, number,
+repository, state, title, type, updated_at, url`.
 
 ```bash
 gt search repo command line

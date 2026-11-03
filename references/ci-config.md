@@ -17,16 +17,18 @@ gt secret <command>
 ```
 
 Read by workflows as `${{ secrets.NAME }}`. Secret values are never shown.
+`secret list` aliases `secret ls`; `secret delete` aliases `secret rm`.
+
+**JSON fields:** `list` returns `created_at, description, name`; `set` returns
+`description, name`.
 
 - `set [<name>] [-b|--body value] [-F|--body-file file|-] [-d|--description]
-  [-f|--env-file file|-] [-o|--org ORG] [--account]` — `--env-file` sets every
-  `NAME=value` of a dotenv file. The value comes from the flag/file, else stdin
-  when not a terminal (one trailing newline removed), else a prompt. Setting an
+  [-f|--env-file file|-] [-o|--org ORG] [--account]` — the value comes from the
+  flag/file, else stdin when not a terminal (one trailing newline removed), else
+  a prompt. `--env-file` sets every `NAME=value` of a dotenv file. Setting an
   existing secret without `--description` clears its description.
 - `list [-L n] [--page n] [-o|--org ORG] [--account]` (alias `ls`)
 - `delete <name> [-o|--org ORG] [--account] [-y|--yes]` (alias `rm`)
-
-JSON: `created_at, description, name`.
 
 ```bash
 gt secret set DEPLOY_TOKEN
@@ -43,7 +45,8 @@ gt variable <command>
 ```
 
 Read by workflows as `${{ vars.NAME }}`. Same scoping and naming rules as
-secrets.
+secrets. `variable list` aliases `variable ls`; `variable delete` aliases
+`variable rm`.
 
 **JSON fields:** `description, name, value`.
 
@@ -57,7 +60,6 @@ secrets.
 ```bash
 gt variable set ENVIRONMENT --body staging
 gt variable set CONFIG --org acme < config.json
-gt variable set --env-file .env
 region=$(gt variable get REGION --org acme)
 gt variable list --org acme
 ```

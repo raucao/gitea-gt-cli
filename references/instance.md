@@ -7,23 +7,27 @@ Global flags are in SKILL.md.
 
 ```text
 gt webhook <command>
-  create  delete  edit  list  view
+  create  delete  edit  list  test  view
 ```
 
 Scope: repository (default), organization (`--org`), your account (`--account`),
-or the instance (`--global`, administrators). Delivery URLs often carry
-credentials, so `gt` shows them without user info and query (and without the path
-for chat services); `view --reveal-url` shows a URL whole. Signing secrets and
-authorization headers are never shown.
+or the instance's system webhooks (`--global`, administrators). Delivery URLs
+often carry credentials, so `gt` shows them without user info and query (and
+without the path for chat services); `view --reveal-url` shows a URL whole.
+Signing secrets and authorization headers are never shown.
 
 **JSON fields:** `active, branch_filter, content_type, created_at, events, id,
 type, updated_at, url`.
 
-- `create [<url>] [--url URL] [--type {gitea|gogs|slack|discord|dingtalk|telegram|msteams|feishu|matrix|wechatwork|packagist}]
+- `create [<url>] [--type {gitea|gogs|slack|discord|dingtalk|telegram|msteams|feishu|matrix|wechatwork|packagist}]
   [--events push,issues,...] [--branch-filter glob] [--active[=false]]
   [--secret-file file|-] [--authorization-header-file file|-] [--config k=v]`
-- `list [-L n] [--page n]` (alias `ls`)
-- `view <id> [--reveal-url]`, `edit <id>`, `delete <id>`
+- `edit <id>` — only the flags you pass change; Gitea drops the stored
+  authorization header on every edit, so pass it again (or `--clear-authorization`).
+  Signing secrets cannot be changed: recreate the webhook.
+- `list [-L n] [--page n]` (alias `ls`), `view <id> [--reveal-url]`,
+  `delete <id>`, `test <id>` — send a test push delivery (repository webhooks
+  only).
 
 Events include: `create, delete, fork, push, issues, issues_only, issue_assign,
 issue_label, issue_milestone, issue_comment, pull_request, pull_request_only,
@@ -35,6 +39,7 @@ workflow_run, workflow_job`.
 ```bash
 gt webhook create https://ci.example.com/hook --events push,pull_request --secret-file secret.txt
 gt webhook list --org acme
+gt webhook test 3
 gt webhook view 3 --reveal-url
 ```
 
@@ -46,11 +51,13 @@ gt wiki <command>
 ```
 
 **JSON fields (page):** `author, body, commit_count, footer, sha, sidebar,
-title, updated_at, url`; `list` returns `author, sha, title, updated_at, url`.
+title, updated_at, url`; `list` returns `author, sha, title, updated_at, url`;
+`revisions` returns `author, created_at, message, sha`.
 
 - `create [<title>] [-t title] [-b body] [-F file|-] [-e] [-m message]`
-- `edit <title> [...]`, `view <title>`, `delete <title>`,
-  `list [-L n] [--page n]` (alias `ls`), `revisions <title> [--page n]`
+- `edit <page> [...]` (rename with `--title` alone), `view <page> [-w]`,
+  `delete <page>`, `list [-L n] [--page n]` (alias `ls`),
+  `revisions <page> [--page n]`
 
 ```bash
 gt wiki create "Getting Started" --body-file docs/start.md
@@ -66,13 +73,13 @@ gt ssh-key <command>
 ```
 
 Manage the SSH public keys of your account. `create` aliases `add`; `list`
-aliases `ls`.
+aliases `ls`; `delete` aliases `rm`.
 
 **JSON fields:** `created_at, fingerprint, id, key, read_only, title`.
 
 - `create [<file>|-] [-t|--title TITLE]` — without a file, reads stdin; the
   title defaults to the key comment, then the computer's name.
-- `list [-L n] [--page n]`, `view <id>`, `delete <id>`
+- `list [-L n] [--page n]`, `view <id>`, `delete <id> [-y]`
 
 ```bash
 gt ssh-key add ~/.ssh/id_ed25519.pub --title "Work laptop"
@@ -123,16 +130,18 @@ config dir). `gt config path` prints both files.
 
 - `get <key> [--show-source]`, `list` (alias `ls`, add `--host` for instance
   settings), `set <key> <value> [--host URL] [--user NAME]`.
-- Keys: `default_host`, `git_protocol`, `editor`, `prompt`, `pager`, `browser`,
-  `color`, `hyperlinks`, `markdown`, `remote`, `http_timeout`; instance:
+- Preference keys: `default_host`, `git_protocol`, `editor`, `prompt`, `pager`,
+  `browser`, `color`, `hyperlinks`, `markdown`, `remote`, `http_timeout`,
+  `extensions`, `extension_hosts`, `extension_owners`; instance (`--host`):
   `user`, `ssh_host`, `insecure`, `git_protocol`, `oauth_client_id`, `headers`,
-  `client_cert`, `client_key`; account: `ssh_key`, `ssh_agent`,
-  `ssh_certificate_principal`, `ssh_key_fingerprint`.
+  `client_cert`, `client_key`; account (`--host` + `--user`): `ssh_key`,
+  `ssh_agent`, `ssh_certificate_principal`, `ssh_key_fingerprint`.
 
 ```bash
 gt config path
 gt config set editor "code --wait"
 gt config set ssh_host git.example.com:2222 --host https://example.com
+gt config set extension_hosts https://gitea.com/gitea
 gt config get default_host --show-source
 ```
 
@@ -148,7 +157,7 @@ An alias expands to a `gt` command with arguments, before `gt` runs it. `$1`,
 shell is run; built-in commands always win over an alias of the same name.
 
 - `set <name> <expansion> [--clobber]`
-- `list` (alias `ls`), `delete [<name>...] [--all]` (alias `rm`)
+- `list` (alias `ls`), `delete {<name>... | --all} [-y]` (alias `rm`)
 
 ```bash
 gt alias set il "issue list --label bug"
@@ -163,7 +172,8 @@ gt completion <command>
   bash  fish  powershell  zsh
 ```
 
-Generate the shell completion script. Completion offers `--json` field names.
+Generate the shell completion script. Completion offers `--json`/`--csv` field
+names.
 
 ```bash
 gt completion bash > /etc/bash_completion.d/gt
@@ -182,8 +192,16 @@ other commands acts as another user.) JSON: `active, admin, created_at,
 description, email, full_name, id, location, prohibit_login, restricted, url,
 username, visibility, website`.
 
+- `user list [--query text] [-L n] [--page n]`, `user view <username>`
+- `user create [<username>] [--email addr] [--password-file file]
+  [--full-name NAME] [--admin] [--must-change-password[=false]]
+  [--prohibit-login] [--restricted] [--visibility ...]`
+- `user edit <username> [...]` — as above plus `--active[=false]`,
+  `--allow-*-`/`--max-repo-creation`, `--location`, `--website`.
+- `user delete <username> [--purge] [-y]`
+
 ```bash
-gt admin user list
 gt admin user list --query bob
 gt admin user create alice --email alice@example.com
+gt admin user delete spammer --purge
 ```

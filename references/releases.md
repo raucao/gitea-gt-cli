@@ -8,7 +8,8 @@ gt release <command>
   asset  create  delete  download  edit  list  publish  upload  view
 ```
 
-`release list` aliases `release ls`; `release create` aliases `release new`.
+`release list` aliases `release ls`; `release create` aliases `release new`;
+`release delete` aliases `release rm`.
 
 **JSON fields:** `assets, author, body, created_at, draft, id, prerelease,
 published_at, tag, target, title, url`.
@@ -19,6 +20,8 @@ published_at, tag, target, title, url`.
 `-F/--notes-file`, `-e/--editor`, `-d/--draft`, `-p/--prerelease`,
 `--target branch|commit` (for a new tag), `--asset File`, `--verify-tag`.
 Files after the tag are uploaded as assets; the title defaults to the tag.
+Without a tag and flags on a terminal, a form asks for the tag, title, notes,
+target, and draft/prerelease.
 
 `gt` **never pushes**: commits and tags that exist only in your clone are not on
 the server, so push them first (`git push <remote> <tag>`). A tag that exists
@@ -45,9 +48,28 @@ gt release download v1.0.0 --pattern '*linux*' --dir dist
 gt release download v1.0.0 --archive zip
 ```
 
-## asset / publish / edit / delete / list / view
+## asset
 
-- `asset {list|upload|download|delete|...}` — manage assets individually.
+`asset {list|upload|download|edit|delete}` — manage assets individually,
+addressed by their exact, case-sensitive name or by ID. `edit` renames.
+
+```bash
+gt release asset list v1.0.0
+gt release asset edit v1.0.0 tool-linux --name gt-linux-amd64
+```
+
+## edit / publish / delete / list / view
+
+- `edit <tag>... [-t title] [-n notes] [-F notes-file] [-e] [-d] [-p]
+  [--tag new-tag] [--target ref]` — **without flags on a terminal, a form starts
+  from each release's current values and sends only what changed**. `--tag`
+  changes the tag of a single release.
 - `publish <tag>...` — publish draft releases.
-- `edit <tag>...`, `delete <tag>...`, `list [-L n] [--page n]`,
-  `view [<tag>] [-w]` (latest without a tag).
+- `delete <tag>... [--delete-tag] [-y]` — the tag stays unless `--delete-tag`.
+- `list [-L n] [--page n]`, `view [<tag>] [-w]` (latest without a tag).
+
+```bash
+gt release edit v1.0.0
+gt release edit v1.0.0 --title "1.0.0" --notes-file CHANGELOG.md
+gt release publish v1.1.0
+```

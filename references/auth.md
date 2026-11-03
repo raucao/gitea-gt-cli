@@ -22,7 +22,7 @@ token storage and whether git should use `gt`.
 
 | Flag | Meaning |
 | --- | --- |
-| `--with-token` | Read an access token from stdin (or prompt) |
+| `--with-token` | Read an access token from stdin (or ask on a terminal) |
 | `--oauth` | Authorize in a browser; `--client-id ID` selects the OAuth app |
 | `--scopes scopes` | OAuth scopes, e.g. `read:repository,read:user` (implies `--oauth`) |
 | `--credential-store {keyring\|file}` | Where to keep the token (default `keyring`) |
@@ -47,9 +47,9 @@ instance logged in to becomes `default_host` unless one is set.
 
 - `status [--verify] [--json ...]` — accounts per instance, active one, method.
   Fails with exit **4** when there is no account or the credential is
-  missing/rejected; with `--json` it exits 0 and you read
-  `credential_available`, `verified`, `error`. JSON fields: `active,
-  credential_available, credential_store, error, expires_at,
+  missing/rejected, and **1** when `--verify` gets no answer; with `--json` it
+  exits 0 either way, so read `credential_available`, `verified`, `error`. JSON
+  fields: `active, credential_available, credential_store, error, expires_at,
   git_credential_helper, host, method, scopes, user, verified`.
 - `token` — print the active token (refreshing an expiring OAuth token). SSH-key
   accounts have no token.
@@ -57,8 +57,7 @@ instance logged in to becomes `default_host` unless one is set.
 - `setup-git [--keep-helpers] [--local]` — configure git to ask `gt` for
   credentials. Other credential helpers are turned off for the instance unless
   `--keep-helpers`; `--local` configures only the current repository.
-- `logout` — log out of an account.
-- `refresh` — refresh an OAuth token.
+- `logout`, `refresh`.
 
 ```bash
 gt auth status --verify
@@ -72,9 +71,11 @@ curl -H "Authorization: token $(gt auth token)" https://gitea.com/api/v1/user
   instead of stored credentials. `GITEA_TOKEN` replaces the active account of
   its instance for the active account too; it must belong to the account
   `--user`/`GITEA_CLI_USER` names.
+- In Gitea Actions, `GITEA_TOKEN` is enough: `gt` picks the instance from the
+  job (`GITEA_SERVER_URL`), like `gh` on GitHub.
 - `GITEA_CLI_*` prefixed variables mirror global flags and settings; see
   `gt help environment` for the full list (config dir, user, repo, editor,
-  pager, color, http timeout, ...).
+  pager, color, http timeout, data dir, extensions, ...).
 - `GITEA_INSTANCE_INSECURE`, `GITEA_INSTANCE_SSH_HOST`: pair with `GITEA_TOKEN`.
 
 ## doctor
