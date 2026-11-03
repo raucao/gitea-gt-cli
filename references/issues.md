@@ -57,6 +57,9 @@ assignees, a milestone, labels and a due date. Gitea applies
 labels/milestone/assignees/deadline only to users with issue write access;
 otherwise `gt` reports the left-out fields and fails.
 
+A `-b`/`--body` value is normal paragraphs: do not hard-wrap it, and unwrap text
+copied from a commit message first (see SKILL.md's "Writing text for Gitea").
+
 ```bash
 gt issue create --title "Crash on start" --body "Steps..." \
   --label bug --milestone v1.0

@@ -66,6 +66,9 @@ the title is then `--title`, else the commit message of a single-commit branch,
 else the branch name. When an open PR already exists for the same branches,
 `create` links it instead of opening a new one.
 
+A `-b`/`--body` value is normal paragraphs: do not hard-wrap it, and unwrap text
+copied from a commit message first (see SKILL.md's "Writing text for Gitea").
+
 ```bash
 gt pr create --fill --yes
 gt pr create -t "Add login" -b "Closes #1" -B develop -r carol -l enhancement

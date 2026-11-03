@@ -23,6 +23,9 @@ Files after the tag are uploaded as assets; the title defaults to the tag.
 Without a tag and flags on a terminal, a form asks for the tag, title, notes,
 target, and draft/prerelease.
 
+Release notes (`-n`/`--notes-file`) are normal paragraphs: do not hard-wrap them
+(see SKILL.md's "Writing text for Gitea").
+
 `gt` **never pushes**: commits and tags that exist only in your clone are not on
 the server, so push them first (`git push <remote> <tag>`). A tag that exists
 only in your clone is refused unless `--target` says where Gitea creates it;
