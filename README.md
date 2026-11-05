@@ -66,3 +66,7 @@ binaries); `gt upgrade` keeps it current.
 ## License
 
 [Unlicense](LICENSE) — public domain.
+
+## Contact
+
+E-Mail, Chat, Social, Lightning: raucao@kosmos.org
