@@ -9,12 +9,13 @@ SKILL.md.
 
 ```text
 gt pr <command>
-  attachment  backport  checkout  checks  clean  close  comment  create  diff
-  edit  list  merge  ready  reopen  review  status  timeline  update-branch  view
+  attachment  backport  checkout  checks  clean  close  comment  create  delete
+  diff  edit  list  lock  merge  pin  ready  reopen  review  status  timeline
+  unlock  unpin  update-branch  view
 ```
 
 `pr list` aliases `pr ls`; `pr create` aliases `pr new`; `pr checkout` aliases
-`pr co`.
+`pr co`; `pr delete` aliases `pr rm`.
 
 **PR argument:** `13`, `#13`, a URL, or a head branch name (e.g.
 `feature/login` or `bob:feature/login`). Without one, the PR of the current
@@ -22,17 +23,19 @@ branch.
 
 **JSON fields (PR):** `assignees, author, base, body, comments, created_at,
 draft, due_date, head, head_remote_deleted, head_repo, head_sha, id, labels,
-merge_commit_sha, mergeable, merged, merged_at, merged_by, milestone, number,
-review_decision, reviewer_teams, reviewers, reviews, state, title, updated_at,
-url`. On `list`, `reviewers`, `reviewer_teams`, `reviews`, `review_decision`
-and `merged_by` cost extra requests and are fetched only when named.
+locked, merge_commit_sha, mergeable, merged, merged_at, merged_by, milestone,
+number, pinned, review_decision, reviewer_teams, reviewers, reviews, state,
+title, updated_at, url`. `view` and `edit` add `blocked_by` and `blocks`. On
+`list`, `reviewers`, `reviewer_teams`, `reviews`, `review_decision` and
+`merged_by` cost extra requests and are fetched only when the output names
+them.
 
 ## list
 
 `-s, --state {open|closed|merged|all}` (default `open`), `-a/--assignee`,
 `-A/--author`, `--no-assignee`, `-l/--label`, `-m/--milestone`,
 `-B/--base branch`, `-H/--head branch|OWNER:BRANCH`, `-d/--draft`,
-`-S/--search`, `--sort`, `-L/--limit`, `--page`, `-w/--web`.
+`-S/--search`, `--sort`, `-L/--limit`, `--page`, `--select`, `-w/--web`.
 
 `review_decision` is `changes_requested`, `approved`, `review_required` or
 empty. When the base branch's protection requires approvals, the decision
@@ -51,12 +54,13 @@ gt pr list --json number,title,head --jq '.[] | select(.head == "feature/login")
 
 ## create
 
-`--fill` (title/body from commits), `-t/--title`, `-b/--body`,
+`--fill` (title/body from commits), `--fill-first`, `--fill-verbose`
+(`--fill` variants cannot be combined), `-t/--title`, `-b/--body`,
 `-F/--body-file`, `-e/--editor`, `-B/--base`, `-H/--head`, `-d/--draft`,
-`-a/--assignee`, `-r/--reviewer`, `--reviewer-team`, `-l/--label`,
-`-m/--milestone`, `-p/--project` (repeatable), `--deadline`, `--attachment`,
-`--allow-maintainer-edits` (default true), `--agit` (+ `--topic`), `-w/--web`,
-`-y/--yes`.
+`-a/--assignee`, `-r/--reviewer` (users, or teams as `ORG/TEAM`),
+`-l/--label`, `-m/--milestone`, `-p/--project` (repeatable), `--deadline`,
+`--attachment`, `--no-maintainer-edit` (keep maintainers from pushing to the
+head branch), `--agit` (+ `--topic`), `-w/--web`, `-y/--yes`.
 
 Creates from the current branch, or `--head`. Pushes a not-yet-remote branch
 after a confirmation (`--yes` in CI). A branch without a same-named upstream
@@ -71,7 +75,7 @@ copied from a commit message first (see SKILL.md's "Writing text for Gitea").
 
 ```bash
 gt pr create --fill --yes
-gt pr create -t "Add login" -b "Closes #1" -B develop -r carol -l enhancement
+gt pr create -t "Add login" -b "Closes #1" -B develop -r carol,acme/core -l enhancement
 ```
 
 ## checkout / diff / checks
@@ -80,12 +84,17 @@ gt pr create -t "Add login" -b "Closes #1" -B develop -r carol -l enhancement
   tracking the head, so `git push` updates it. `--update` fast-forwards an
   existing branch and rejects divergence. JSON: `branch, commit, detached,
   remote, tracking`.
-- `diff [{N|url|branch}] [--name-only] [--color auto|always|never] [-w]` — clean
-  diff when piped (`gt pr diff 13 | git apply`); colored and paged on a
-  terminal.
-- `checks [{N|url|branch}] [--watch] [--interval d] [--timeout d] [-w]` — latest
-  status of each check. Exits **8** while pending, **1** on failure. JSON:
-  `created_at, description, id, name, sha, state, updated_at, url`.
+- `diff [{N|url|branch}] [--name-only] [--name-status] [--stat]
+  [--path pattern]... [-e|--exclude pattern]... [--color auto|always|never]
+  [-w]` — clean diff when piped (`gt pr diff 13 | git apply`); colored and paged
+  on a terminal. `--path`/`--exclude` take a file, a `dir/` or a glob;
+  `--name-only`, `--name-status` and `--stat` summarize instead.
+- `checks [{N|url|branch}] [--watch] [--required] [--interval d] [--timeout d]
+  [-w]` — latest status of each check. `--required` shows and awaits only the
+  checks required by the base branch's protection, and fails when it requires
+  none. Exits **8** while pending, **1** on failure; `--interval` must be at
+  least 1s. JSON: `created_at, description, id, name, sha, state, updated_at,
+  url`.
 
 ```bash
 gt pr checkout 13 --update
@@ -95,20 +104,27 @@ gt pr checks 13 --watch && gt pr merge 13
 
 ## merge
 
-`-s/--method {merge|rebase|rebase-merge|squash|fast-forward-only|manually-merged}`
-(default: repo's style), shortcuts `--merge`, `--rebase`, `--squash`, `--auto`
-(merge once required checks succeed), `-d/--delete-branch` (also deletes the
-local head branch when checked out, switching to the base), `-t/--title`,
-`-b/--message`, `-F/--message-file`, `-e/--editor`.
+Choose the method with `-m/--merge`, `-s/--squash` or `-r/--rebase`;
+`--method {merge|rebase|rebase-merge|squash|fast-forward-only|manually-merged}`
+also takes the Gitea-only styles and has no short form. Without a method,
+`gt` uses the repository's style. Other flags: `--auto` (merge once required
+checks succeed), `--disable-auto` (cancel a scheduled merge and merge nothing),
+`-d/--delete-branch` (also deletes the local head branch when checked out,
+switching to the base), `-t/--subject`, `-b/--body`, `-F/--body-file`,
+`-e/--editor`, `--admin` (merge although the branch protection is not met, if
+Gitea lets you bypass it), `--match-head-commit SHA` (merge only while the head
+is still that commit, else exit **6**), `--dry-run`.
 
 For a PR merged outside Gitea, `--method manually-merged --commit SHA` marks it
 as merged by that commit of the base branch; the repository must allow it
 (`gt repo edit --allow-manual-merge`). Gitea does not verify the commit contains
-the PR's changes.
+the PR's changes. Merging while an open issue blocks the PR names the blocking
+issues.
 
 ```bash
 gt pr merge 13 --squash --delete-branch
 gt pr merge 13 --auto --yes
+gt pr merge 13 --squash --match-head-commit 4b825dc
 gt pr merge 13 --method manually-merged --commit 4b825dc --delete-branch
 ```
 
@@ -116,12 +132,18 @@ gt pr merge 13 --method manually-merged --commit 4b825dc --delete-branch
 
 Choose the type with `-a/--approve`, `-r/--request-changes` (needs a body), or
 `-c/--comment`. Flags: `-b/--body`, `-F/--body-file`, `-e/--editor`,
-`--pending` (save for later), `--commit sha`,
+`--pending` (save for later), `--commit sha`, `--dry-run`,
 `--comments-file file` (JSON array of `path`, `body`, `new_position` or
 `old_position`), `-y/--yes`. Subcommands: `create, list, view, delete, submit,
 request, cancel-request, comments, reply, resolve, unresolve, dismiss,
 undismiss`. JSON: `author, body, comments_count, commit, dismissed, id,
 official, stale, state, submitted_at, team, url`.
+
+`request` and `cancel-request` take `-r/--reviewer` — users, or teams as
+`ORG/TEAM` of the repository's organization. `reply <number> <comment-id>`,
+`resolve`/`unresolve [... <comment-id>]`, and `dismiss`/`undismiss <number>
+<review-id>` act on inline conversations and reviews; `comments` lists inline
+comments (`--review ID` limits them to one review).
 
 On a terminal, no type opens an interactive review that can annotate the diff in
 your editor (lines you start with `#` become inline comments).
@@ -131,6 +153,7 @@ gt pr review --approve
 gt pr review 13 -r -b "Please hash the password"
 gt pr review 13 --pending --comments-file inline.json
 gt pr review submit 13 --approve
+gt pr review request 13 --reviewer acme/developers
 ```
 
 ## backport
@@ -170,22 +193,32 @@ gt pr update-branch 13 --rebase
   current_branch, review_requested`.
 - `clean [{...}] [--ignore-sha] [-y]` — delete the branch of a merged/closed PR
   locally and on Gitea. JSON: `default_branch, local_branch, remote,
-  remote_branch, remote_deleted, remote_skip_reason, remote_skipped`.
+  remote_branch, remote_deleted, remote_skip_reason, remote_skipped,
+  removed_remote`.
 - `ready [{...}] [--undo]` — mark ready/back to draft (toggles `WIP:`/`[WIP]`).
 - `comment [{...}]` — like `issue comment` (JSON: `author, body, created_at, id,
   issue_number, updated_at, url`); subcommands `create|list|view|edit|delete`
   and `attachment` for the files on a comment.
 - `edit [{...}]` — change title, body, base, reviewers, labels, assignees,
-  milestone, draft state or due date. Relative add/remove flags, or `--set-*` to
-  replace; **without flags on a terminal a form starts from the current values
-  and sends only what changed**.
+  milestone, draft state or due date. Relative add/remove flags
+  (`--add-reviewer`/`--remove-reviewer`, `--add-blocked-by`,
+  `--remove-blocked-by`, `--add-blocking`, `--remove-blocking`, …), or
+  `--set-*` to replace; `--allow-maintainer-edit[=false]`, `--draft`,
+  `--ready`. Reviewers can be teams as `ORG/TEAM`. **Without flags on a
+  terminal a form starts from the current values and sends only what changed**.
+- `lock [{...}] [-r reason]` / `unlock`, `pin` / `unpin`, `delete` (alias `rm`)
+  — moderation and removal. `delete` keeps the branches; a branch names only an
+  open PR, so a closed or merged one needs its number or URL.
 - `view [{...}] [-c|--comments] [-w]`, `close`, `reopen`, `timeline`,
-  `attachment`.
+  `attachment`. `view` tells a deleted head branch or open blockers apart from
+  merge conflicts.
 
 ```bash
 gt pr status
-gt pr edit 13 --title "Add login support" --add-reviewer carol
+gt pr edit 13 --title "Add login support" --add-reviewer carol,acme/core
+gt pr edit 13 --add-blocking 20 --remove-blocked-by 9
 gt pr ready
+gt pr lock 13 --reason Resolved
 gt pr clean 13
 ```
 

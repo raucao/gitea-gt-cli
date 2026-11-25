@@ -22,13 +22,16 @@ can declare aliases in its `gt-extension.yml`, so its commands run as top-level
 [--force] [-y|--yes]` — the repository is `OWNER/REPO`, `HOST/OWNER/REPO`, a
 URL on a Gitea instance, or `https://github.com/OWNER/gh-NAME` for a GitHub CLI
 extension. `.` installs the `gt-NAME` executable of the current directory,
-which runs in place while you develop it.
+which runs in place while you develop it, as long as it (or what it links to)
+is a regular file owned by you or root that other users cannot write to or
+replace.
 
 `gt` installs the release asset `NAME-OS-ARCH` or `REPO-OS-ARCH` (`.exe` on
 Windows), else one whose name ends in `OS-ARCH`, of the latest release or of
 the release `--pin` names. Without such an asset it clones the repository at
 the release, the `--pin` commit or the default branch, which must hold an
-executable `gt-NAME` at its root.
+executable `gt-NAME` at its root. The commit an install resolves is checked to
+be a full commit ID before it is shown or passed to git.
 
 `gt` checks a downloaded asset against the SHA-256 GitHub recorded for it, else
 against the release's `checksums.txt`. When the release publishes neither, `gt`
@@ -50,8 +53,9 @@ gt extension install .
 ## list / search / browse / remove / upgrade
 
 - `list` (alias `ls`) — JSON: `commit, compat_gh, credentials, description,
-  digest_source, host, kind, name, path, pinned, repository, sha256, shadowed,
-  source, tag`.
+  digest_source, host, kind, missing, name, path, pinned, repository, sha256,
+  shadowed, source, tag`. `missing` marks a local extension whose executable
+  no longer exists.
 - `search [<query>...] [--index repository]` — searches an index repository's
   `extensions.yml` by name and description; the default index is
   `https://gitea.com/gitea/cli-extensions`. JSON: `description, installed,
@@ -102,6 +106,9 @@ gt --repo alice/project extension exec hello --greeting hi
   `GITEA_CLI_EXTENSION` (its name) and `GITEA_CLI_EXECUTABLE` (the path of `gt`).
 - `gt` refuses stored credentials to an extension that was not given them, and
   checks the executable against the SHA-256 recorded at install.
+- A local extension runs only when its executable, or what it links to, is a
+  regular file owned by you or root that not every user can write to or
+  replace. A missing one points to `gt extension remove`.
 - `GITEA_CLI_NO_EXTENSIONS` turns extensions off entirely.
 
 ## Upgrade `gt` itself
@@ -110,8 +117,9 @@ gt --repo alice/project extension exec hello --greeting hi
 replaces `gt` with its latest release, a named release, or the latest build of
 the main branch (`--nightly`), after verifying the download's SHA-256 checksum.
 `GITEA_CLI_DOWNLOAD_URL` selects another download location. When Homebrew, a
-Linux package, Nix or `go install` installed `gt`, it names the command that
-upgrades it instead.
+Linux package or Nix installed `gt`, it names the command that upgrades it
+instead. A `gt` built with `go install` cannot upgrade itself; install a release
+instead.
 
 After a command, `gt` tells you, at most once a day, when a newer release is
 out. It stays quiet in CI and when stdout or stderr is not a terminal;

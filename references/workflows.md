@@ -2,7 +2,7 @@
 
 End-to-end recipes for common tasks. For per-command flags and JSON fields, read
 the group file in this directory (listed in SKILL.md's command map). All flags
-are from `gt` 1.0.0; `gt <cmd> --help` is authoritative.
+are from `gt` 2.0.0; `gt <cmd> --help` is authoritative.
 
 ## Issue lifecycle
 
@@ -54,6 +54,22 @@ The repository must allow it (`gt repo edit --allow-manual-merge`).
 git push origin main                      # the commit that merged the PR
 gt pr merge 13 --method manually-merged --commit 4b825dc --delete-branch
 ```
+
+## Inspect commits and tags
+
+```bash
+gt commit list --path internal/ --not v1.0.0
+gt commit view 3f2a9c1
+gt commit diff 3f2a9c1 --stat
+gt commit status main                         # exit 1 failed, 8 pending
+gt commit pr 3f2a9c1 --json number,title,url
+gt tag list
+gt tag create v1.2.0 --target main --message "Version 1.2.0"
+```
+
+`gt commit diff` pipes cleanly into `git apply`; `--patch` writes a patch that
+`git am` takes. `gt tag create` creates the tag on the server (it does not push
+a local tag). See [commits.md](commits.md).
 
 ## Actions: dispatch, watch, logs, artifacts
 
@@ -119,11 +135,14 @@ See [extensions.md](extensions.md).
 
 ## Machine-readable output: JSON and CSV
 
-Text output is for people and may change; scripts should use `--json`/`--jq` or
-`--csv`.
+Text output is for people and may change; scripts should use `--json`/`--jq`,
+`--template` or `--csv`. `--json`/`--csv` require a field list; use `gt schema`
+to look fields up.
 
 ```bash
 gt issue list --state all --json number,title,state
 gt issue list --state all --csv number,title,state > issues.csv
 gt issue list --json number,title --jq '.[] | "\(.number)\t\(.title)"'
+gt issue list --json number,title --template '{{range .}}#{{.number}} {{.title}}{{"\n"}}{{end}}'
+gt schema issue list
 ```

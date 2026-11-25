@@ -69,7 +69,9 @@ gt release asset edit v1.0.0 tool-linux --name gt-linux-amd64
   changes the tag of a single release.
 - `publish <tag>...` — publish draft releases.
 - `delete <tag>... [--delete-tag] [-y]` — the tag stays unless `--delete-tag`.
-- `list [-L n] [--page n]`, `view [<tag>] [-w]` (latest without a tag).
+- `list [--exclude-drafts] [--exclude-pre-releases] [--order {asc|desc}]
+  [--select] [-L n] [--page n]`, `view [<tag>] [-w]` (latest without a tag).
+  `--order` sorts by publication date.
 
 ```bash
 gt release edit v1.0.0

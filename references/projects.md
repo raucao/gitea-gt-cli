@@ -6,7 +6,7 @@ SKILL.md.
 
 ```text
 gt project <command>
-  close  create  delete  edit  list  reopen  view
+  close  create  delete  edit  list  reopen  view  workflow
 ```
 
 `project list` aliases `project ls`; `project create` aliases `project new`;
@@ -68,4 +68,29 @@ that can write to the organization.
 ```bash
 gt issue move 47 to "In progress"
 gt issue move 47 in-progress --project Roadmap
+```
+
+## Project workflows (Gitea 29 or newer)
+
+```text
+gt project workflow <command>
+  create  delete  disable  edit  enable  list  view
+```
+
+Automations that move, label, close or reopen the issues and pull requests of a
+board when something happens to them. Workflows are addressed by ID; the same
+`--org`, `--account` and `--by-name` scope flags as `project` apply.
+
+`create <project> --event EVENT [...]` takes
+`--event {item_added_to_project|item_removed_from_project|item_reopened|
+item_closed|item_column_changed|code_changes_requested|code_review_approved|
+pull_request_merged}`, `--column` and `--from-column`/`--to-column`,
+`-l/--label` (only for items with all of them), `--add-label`/`--remove-label`,
+`--issue-state {close|reopen|none}`, `--issue-type {issue|pull_request|any}`,
+`--disabled` and `--dry-run`.
+
+```bash
+gt project workflow list Roadmap
+gt project workflow create Roadmap --event item_added_to_project --column Todo
+gt project workflow disable Roadmap 3
 ```

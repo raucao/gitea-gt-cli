@@ -8,8 +8,8 @@ SKILL.md.
 
 ```text
 gt repo <command>
-  archive  clone  create  delete  deploy-key  edit  fork  list  migrate
-  rename  set-default  sync  transfer  unarchive  view
+  activity  archive  clone  create  delete  deploy-key  edit  fork  gitignore
+  license  list  migrate  rename  set-default  sync  transfer  unarchive  view
 ```
 
 `repo list` aliases `repo ls`; `repo create` aliases `repo new`; `repo delete`
@@ -19,9 +19,10 @@ aliases `repo rm`.
 `HOST/OWNER/NAME`, or a URL. Without one, the current clone's repository.
 
 **JSON fields (repo objects):** `actions_enabled, archived, clone_url,
-default_branch, description, empty, fork, forks_count, full_name, id, mirror,
-mirror_interval, name, open_issues_count, open_pr_count, original_url, parent,
-private, ssh_url, stars_count, template, topics, updated_at, url, website`.
+default_branch, description, empty, fork, forks_count, full_name, id, internal,
+language, mirror, mirror_interval, name, open_issues_count, open_pr_count,
+original_url, parent, private, ssh_url, stars_count, template, topics,
+updated_at, url, website`.
 
 ### clone
 
@@ -43,20 +44,24 @@ gt repo clone alice/project -- --branch develop --recurse-submodules
 
 ### list / view
 
-- `list [<owner>] [--starred] [--watched] [--type {fork|source|mirror}] [-L n]
-  [--page n]`.
+- `list [<owner>] [--starred] [--watched] [--type {fork|source|mirror}]
+  [--visibility {public|internal|private}] [--archived | --no-archived]
+  [--topic topic]... [--language language] [--select] [-L n] [--page n]` —
+  Gitea cannot filter these lists, so the filters make `gt` read pages until
+  the requested page is full.
 - `view [<repo>] [-b branch] [-w]` — description, state, counts, clone URLs,
   then the rendered README (`--branch` shows another branch's README).
 
 ### create
 
 `create [<name>] [--org ORG] [--private|--public] [--auto-init]
-[--readme TMPL] [--gitignores TMPL] [--license TMPL] [--default-branch NAME]
+[--readme TMPL] [-g|--gitignores TMPL] [-l|--license TMPL] [--default-branch NAME]
 [-d DESC] [--source DIR] [--push] [--remote-name NAME] [--clone]
 [--as-template] [--template OWNER/REPO] [--copy-avatar] [--copy-content]
 [--copy-git-hooks] [--copy-labels] [--copy-topics] [--copy-webhooks]
 [--label-template NAME] [--object-format {sha1|sha256}] [--team NAME]
-[--trust-model {default|collaborator|committer|collaboratorcommitter}]`.
+[--trust-model {default|collaborator|committer|collaboratorcommitter}]
+[--dry-run]`.
 
 `--source`/`--push` publish a local repo; `--template` copies another and its
 content/hooks/labels/topics by default; `--auto-init` adds a first commit from
@@ -108,17 +113,18 @@ gt repo set-default --unset
 ### edit / delete / rename / transfer / archive / unarchive / migrate / deploy-key
 
 - `edit [<repo>]` — only the flags you pass change; on/off settings take
-  `=false`. Flags include `-d/--description`, `--website`, `--private`
-  (`=false` makes it public), `--visibility {public|private}`,
-  `--default-branch`, `--enable-issues`, `--enable-pull-requests`,
-  `--enable-wiki`, `--enable-projects`, `--actions`, `--as-template`,
+  `=false`. Flags include `-d/--description`, `--website`,
+  `--visibility {public|private}` (there is no `--private`), `--default-branch`,
+  `--enable-issues`, `--enable-pull-requests`, `--enable-wiki`,
+  `--enable-projects`, `--enable-actions`, `--as-template`,
   `--add-topic`/`--remove-topic`, `--default-merge-style
   {merge|rebase|rebase-merge|squash|fast-forward-only}`,
   `--allow-merge-commit`, `--allow-rebase`, `--allow-squash`,
   `--delete-branch-on-merge`, `--allow-manual-merge`,
-  `--autodetect-manual-merge`.
-- `delete [<repo>] [-y|--yes]`, `rename <new-name>`, `transfer <new-owner>
-  [--team NAME]`, `archive`, `unarchive`.
+  `--autodetect-manual-merge`, `--dry-run`.
+- `delete [<repo>] [-y|--yes] [--dry-run]`, `rename <new-name>`,
+  `transfer <new-owner> [--team NAME]`, `archive [--dry-run]`,
+  `unarchive`.
 - `migrate [<clone-url>] [--service {git|gitea|gitlab|gogs|github}]
   [--owner OWNER] [--mirror] [--mirror-interval 8h] [--issues] [--labels]
   [--milestones] [--pull-requests] [--releases] [--wiki] [--lfs]
@@ -138,7 +144,7 @@ gt repo delete alice/old-project --yes
 
 ```text
 gt branch <command>
-  create  delete  list  protect  rename  unprotect  view
+  create  delete  list  protect  protection  rename  unprotect  view
 ```
 
 Server-side branches (use `git` for local branches). `branch list` aliases
@@ -156,12 +162,36 @@ message, name, protected, required_approvals, sha, updated_at`.
   change only the named settings. An empty `--allow-push=` lets nobody push,
   and an empty `--status-check=` stops requiring status checks.
 - `unprotect <branch>... [-y]`.
+- `protection list` / `protection view <rule>` — the rules in the order Gitea
+  applies them: branch or pattern, required approvals, who may push directly
+  and required status checks. A branch is protected by the first matching rule.
+  Both require repository admin access.
 
 ```bash
 gt branch list
 gt branch create release/1.0 --source main
 gt branch protect main --required-approvals 2 --status-check ci/build
 gt branch protect --pattern 'release/*' --allow-push acme/release
+gt branch protection list
+```
+
+## activity / gitignore / license
+
+- `activity [<repo>] [--date YYYY-MM-DD] [-L n] [--page n]` — what happened
+  lately in a repository (issues and PRs opened, closed and commented on,
+  pushes, tags, releases), newest first; `--date` keeps one day in the server's
+  time zone. JSON: `actor, comment_id, content, created_at, id, private, ref,
+  repository, type`.
+- `gitignore {list|view <template>}` — list the `.gitignore` templates Gitea
+  offers, or print one. The names are the values of `repo create
+  --gitignores`.
+- `license {list|view <key>}` — list the licenses Gitea offers, or print one.
+  The keys are the values of `repo create --license`.
+
+```bash
+gt repo activity --date 2026-11-18
+gt repo gitignore view Go >> .gitignore
+gt repo license view MIT
 ```
 
 ## browse

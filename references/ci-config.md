@@ -23,10 +23,11 @@ Read by workflows as `${{ secrets.NAME }}`. Secret values are never shown.
 `description, name`.
 
 - `set [<name>] [-b|--body value] [-F|--body-file file|-] [-d|--description]
-  [-f|--env-file file|-] [-o|--org ORG] [--account]` — the value comes from the
-  flag/file, else stdin when not a terminal (one trailing newline removed), else
-  a prompt. `--env-file` sets every `NAME=value` of a dotenv file. Setting an
-  existing secret without `--description` clears its description.
+  [-f|--env-file file|-] [-o|--org ORG] [--account] [--dry-run]` — the value
+  comes from the flag/file, else stdin when not a terminal (one trailing newline
+  removed), else a prompt. `--env-file` sets every `NAME=value` of a dotenv
+  file. Values must be valid UTF-8; encode binary data, such as with base64.
+  Setting an existing secret without `--description` clears its description.
 - `list [-L n] [--page n] [-o|--org ORG] [--account]` (alias `ls`)
 - `delete <name> [-o|--org ORG] [--account] [-y|--yes]` (alias `rm`)
 
@@ -51,7 +52,8 @@ secrets. `variable list` aliases `variable ls`; `variable delete` aliases
 **JSON fields:** `description, name, value`.
 
 - `set [<name>] [-b value] [-F file|-] [-d description] [-f|--env-file file|-]
-  [-o|--org ORG] [--account]`
+  [-o|--org ORG] [--account] [--dry-run]` — values must be valid UTF-8; encode
+  binary data, such as with base64.
 - `get <name> [...]` — print just the value (for scripts).
 - `view <name>` — value plus description.
 - `list [-L n] [--page n] [-o|--org ORG] [--account]` (alias `ls`)
